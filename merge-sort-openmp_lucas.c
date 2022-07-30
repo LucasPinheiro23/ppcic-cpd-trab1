@@ -4,8 +4,8 @@
 //#include<omp.h>
 #include<time.h>
 
-#define SIZE 1000000
-#define MAX_NUM 1000000
+#define SIZE 20000
+#define MAX_NUM 1000
 
 // Merges two subarrays of arr[].
 // First subarray is arr[l..m]
@@ -112,13 +112,15 @@ int main()
 	mergeSort(arr, 0, SIZE - 1);
 	gettimeofday(&end, 0);
 
-	long seconds = end.tv_sec - begin.tv_sec;
-    long microseconds = end.tv_usec - begin.tv_usec;
-    double elapsed = (seconds + microseconds*1e-6) * 1000;
-
 	//printf("\n\nSorted array is \n");
 	//printArray(arr, SIZE);
 
+	long seconds = end.tv_sec - begin.tv_sec;
+    long microseconds = end.tv_usec - begin.tv_usec;
+	//double elapsed = (seconds + microseconds*1e-6); //Seconds
+	//printf("\n\nTotal execution time of mergeSort() function: %f s\n", elapsed);
+    double elapsed = (seconds + microseconds*1e-6) * 1000; //Milliseconds
 	printf("\n\nTotal execution time of mergeSort() function: %f ms\n", elapsed);
+	
 	return 0;
 }
