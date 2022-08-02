@@ -4,15 +4,15 @@
 #include<omp.h>
 #include<time.h>
 
-#define SIZE 1000000
-#define MAX_NUM 100
+#define SIZE 10
+#define MAX_NUM 10
 
 int thread_num = 0;
 int max_threads = 0;
 int num_threads = 0;
 int num_procs = 0;
 double elapsed, begin, end = 0;
-long microseconds, seconds;
+long microseconds, seconds = 0;
 
 // Merges two subarrays of arr[].
 // First subarray is arr[l..m]
@@ -28,10 +28,9 @@ void merge(int arr[], int l, int m, int r)
 	int n1 = m - l + 1;
 	int n2 = r - m;
 
-	/* create temp arrays */
+	/* Arrays temporarios */
 	int L[n1], R[n2];
 
-	/* Copy data to temp arrays L[] and R[] */
 	//Pega os subarrays a partir dos indices e do array principal
 	for (i = 0; i < n1; i++){
 		L[i] = arr[l + i];
@@ -41,10 +40,10 @@ void merge(int arr[], int l, int m, int r)
 		R[j] = arr[m + 1 + j];
 	}
 
-	/* Merge the temp arrays back into arr[l..r]*/
-	i = 0; // Initial index of first subarray
-	j = 0; // Initial index of second subarray
-	k = l; // Initial index of merged subarray
+	/* Junta os arrays de volta em arr[l..r]*/
+	i = 0; // Indice inicial do primeiro subarray
+	j = 0; // Indice inicial do segundo subarray
+	k = l; // Indice inicial do array mesclado
 
 	while (i < n1 && j < n2) {
 		if (L[i] <= R[j]) {
@@ -58,31 +57,27 @@ void merge(int arr[], int l, int m, int r)
 		k++;
 	}
 
-	/* Copy the remaining elements of L[], if there
-	are any */
+	//Copia elementos restantes de L[], se houver
 	while (i < n1) {
 		arr[k] = L[i];
 		i++;
 		k++;
 	}
 
-	/* Copy the remaining elements of R[], if there
-	are any */
+	//Copia elementos restantes de R[], se houver
 	while (j < n2) {
 		arr[k] = R[j];
 		j++;
 		k++;
 	}
-	//}
 }
 
-/* l is for left index and r is right index of the
-sub-array of arr to be sorted */
+//l é o índice do array da esquerda, r o da direita.
 void mergeSort(int arr[], int l, int r)
 {
 	//Mostra qual thread está executando esse trecho no momento
 	// #if _OPENMP
-	// 		printf("\nThread no %d chamou mergeSort()\n", omp_get_thread_num());
+	// 	printf("\nThread no %d chamou mergeSort()\n", omp_get_thread_num());
 	// #endif
 
 	if (l < r) {
@@ -100,8 +95,9 @@ void mergeSort(int arr[], int l, int r)
 		mergeSort(arr, m + 1, r);
 
 		//Aguarda todas as threads filhas terminarem para seguir com o merge (etapa sequencial)
-		#pragma omp taskwait
-		merge(arr, l, m, r);
+		//#pragma omp taskwait
+		//ADICIONAR TASK AQUI COM ELEMENTOS CRITICAL?
+		//merge(arr, l, m, r);
 	}
 }
 
@@ -126,34 +122,26 @@ int main(int argc, char** argv)
 	// }
 	// #endif
 
-	double begin, end;	
 	struct timeval b, e;
 
 	//Gera semente aletória para incializar o array numérico
 	srand(time(0));
 
-	int arr[SIZE];
+	//int arr[SIZE];
+	int* arr = (int*) malloc(SIZE * sizeof(int));
 	
 	//Gera array aleatoriamente
 	for(int i = 0; i<SIZE; i++){
 		arr[i] = rand()%MAX_NUM;
 	}
 
-	// Printa o array inicial
+	//Printa o array inicial
 	// printf("Array inicial:\n");
 	// printArray(arr, SIZE);
 
-	//Pega o tempo inicial
-	#if _OPENMP
-	{
-		begin = omp_get_wtime();
-	}
-	#else
-	{
-		gettimeofday(&b, 0);
-	}
-	#endif
-
+	//Marca o tempo inicial
+	gettimeofday(&b, NULL);
+	
 	//Inicializa região paralela
 	#pragma omp parallel
 	{
@@ -163,36 +151,18 @@ int main(int argc, char** argv)
 			mergeSort(arr, 0, SIZE - 1);
 		}
 	}
-
 	//Marca o tempo final
-	#if _OPENMP
-	{
-		end = omp_get_wtime();
-	}
-	#else
-	{
-		gettimeofday(&e, 0);
-	}
-	#endif
+	gettimeofday(&e, NULL);
 
-	// Printa o array ordenado
-	// printf("\n\nArray ordenado:\n");
-	// printArray(arr, SIZE);
+	//Printa o array ordenado
+	printf("\n\nArray ordenado:\n");
+	printArray(arr, SIZE);
 
 	//Calcula o tempo total de execução a partir da primeira chamada do algoritmo mergeSort()
-	#if _OPENMP
-	{
-		elapsed = end - begin;
-	}
-	#else
-	{
-		long seconds = e.tv_sec - b.tv_sec;
-		microseconds = e.tv_usec - b.tv_usec;
-		elapsed = (seconds + microseconds*1e-6) * 1000; //Milliseconds
-	}
-	#endif
-	
-	printf("\n\nTotal execution time of mergeSort() function: %ld us\n", microseconds);
+	seconds = e.tv_sec - b.tv_sec;
+	microseconds = e.tv_usec - b.tv_usec;
+	elapsed = (seconds + microseconds*1e-6) * 1000; //Milliseconds
+
 	printf("\n\nTotal execution time of mergeSort() function: %f ms\n", elapsed);
 
 	return 0;
