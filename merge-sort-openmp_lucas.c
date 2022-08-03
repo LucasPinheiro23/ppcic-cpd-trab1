@@ -4,8 +4,10 @@
 #include<omp.h>
 #include<time.h>
 
-#define SIZE 10
-#define MAX_NUM 10
+#define SIZE 1000000
+#define MAX_NUM 100
+
+int threshold = 10000;
 
 int thread_num = 0;
 int max_threads = 0;
@@ -85,19 +87,27 @@ void mergeSort(int arr[], int l, int r)
 		int m = l + (r - l) / 2;
 
 		// Ordena primeira e segunda metades
+		// if((r-l)>threshold)
+		// {
+			//Inicializa tarefa (nova thread filha com metade do array)
+			#pragma omp task
+			mergeSort(arr, l, m);
+			
+			//Inicializa outra tarefa (nova thread filha com outra metade do array)
+			#pragma omp task
+			mergeSort(arr, m + 1, r);
 
-		//Inicializa tarefa (nova thread filha com metade do array)
-		#pragma omp task
-		mergeSort(arr, l, m);
-		
-		//Inicializa outra tarefa (nova thread filha com outra metade do array)
-		#pragma omp task
-		mergeSort(arr, m + 1, r);
-
-		//Aguarda todas as threads filhas terminarem para seguir com o merge (etapa sequencial)
-		//#pragma omp taskwait
-		//ADICIONAR TASK AQUI COM ELEMENTOS CRITICAL?
-		//merge(arr, l, m, r);
+			//Aguarda todas as threads filhas terminarem para seguir com o merge (etapa sequencial)
+			#pragma omp taskwait
+			//ADICIONAR TASK AQUI COM ELEMENTOS CRITICAL?
+			merge(arr, l, m, r);
+		// }
+		// else
+		// {
+		// 	mergeSort(arr, l, m);
+		// 	mergeSort(arr, m + 1, r);
+		// 	merge(arr, l, m, r);
+		// }
 	}
 }
 
@@ -146,7 +156,7 @@ int main(int argc, char** argv)
 	#pragma omp parallel
 	{
 		//Inicializa algoritmo com única thread (principal)
-		#pragma omp single nowait
+		#pragma omp single
 		{
 			mergeSort(arr, 0, SIZE - 1);
 		}
@@ -155,8 +165,8 @@ int main(int argc, char** argv)
 	gettimeofday(&e, NULL);
 
 	//Printa o array ordenado
-	printf("\n\nArray ordenado:\n");
-	printArray(arr, SIZE);
+	// printf("\n\nArray ordenado:\n");
+	// printArray(arr, SIZE);
 
 	//Calcula o tempo total de execução a partir da primeira chamada do algoritmo mergeSort()
 	seconds = e.tv_sec - b.tv_sec;
