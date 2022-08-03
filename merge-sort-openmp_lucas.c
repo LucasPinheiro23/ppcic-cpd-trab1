@@ -4,10 +4,10 @@
 #include<omp.h>
 #include<time.h>
 
-#define SIZE 1000000
+#define SIZE 2
 #define MAX_NUM 100
 
-int threshold = 10000;
+int threshold = 0;
 
 int thread_num = 0;
 int max_threads = 0;
@@ -87,8 +87,8 @@ void mergeSort(int arr[], int l, int r)
 		int m = l + (r - l) / 2;
 
 		// Ordena primeira e segunda metades
-		// if((r-l)>threshold)
-		// {
+		if((r-l)>threshold)
+		{
 			//Inicializa tarefa (nova thread filha com metade do array)
 			#pragma omp task
 			mergeSort(arr, l, m);
@@ -101,13 +101,13 @@ void mergeSort(int arr[], int l, int r)
 			#pragma omp taskwait
 			//ADICIONAR TASK AQUI COM ELEMENTOS CRITICAL?
 			merge(arr, l, m, r);
-		// }
-		// else
-		// {
-		// 	mergeSort(arr, l, m);
-		// 	mergeSort(arr, m + 1, r);
-		// 	merge(arr, l, m, r);
-		// }
+		}
+		else
+		{
+			mergeSort(arr, l, m);
+			mergeSort(arr, m + 1, r);
+			merge(arr, l, m, r);
+		}
 	}
 }
 
@@ -133,47 +133,56 @@ int main(int argc, char** argv)
 	// #endif
 
 	struct timeval b, e;
+	double sum_elapsed = 0;
+	int repeat = 10;
 
-	//Gera semente aletória para incializar o array numérico
-	srand(time(0));
+	for(int c = 0; c < repeat; c++){
+		//Gera semente aletória para incializar o array numérico
+		srand(time(0));
 
-	//int arr[SIZE];
-	int* arr = (int*) malloc(SIZE * sizeof(int));
-	
-	//Gera array aleatoriamente
-	for(int i = 0; i<SIZE; i++){
-		arr[i] = rand()%MAX_NUM;
-	}
-
-	//Printa o array inicial
-	// printf("Array inicial:\n");
-	// printArray(arr, SIZE);
-
-	//Marca o tempo inicial
-	gettimeofday(&b, NULL);
-	
-	//Inicializa região paralela
-	#pragma omp parallel
-	{
-		//Inicializa algoritmo com única thread (principal)
-		#pragma omp single
-		{
-			mergeSort(arr, 0, SIZE - 1);
+		//int arr[SIZE];
+		int* arr = (int*) malloc(SIZE * sizeof(int));
+		
+		//Gera array aleatoriamente
+		for(int i = 0; i<SIZE; i++){
+			arr[i] = rand()%MAX_NUM;
 		}
+
+		//Printa o array inicial
+		// printf("Array inicial:\n");
+		// printArray(arr, SIZE);
+
+		//Marca o tempo inicial
+		gettimeofday(&b, NULL);
+		
+		//Inicializa região paralela
+		#pragma omp parallel
+		{
+			//Inicializa algoritmo com única thread (principal)
+			#pragma omp single
+			{
+				mergeSort(arr, 0, SIZE - 1);
+			}
+		}
+		//Marca o tempo final
+		gettimeofday(&e, NULL);
+
+		//Printa o array ordenado
+		// printf("\n\nArray ordenado:\n");
+		// printArray(arr, SIZE);
+
+		//Calcula o tempo total de execução a partir da primeira chamada do algoritmo mergeSort()
+		seconds = e.tv_sec - b.tv_sec;
+		microseconds = e.tv_usec - b.tv_usec;
+		elapsed = (seconds + microseconds*1e-6) * 1000; //Milliseconds
+		//printf("\n\nTotal execution time of mergeSort() no %d: %f ms\n", c, elapsed);
+		sum_elapsed += elapsed;
+
+		free(arr);
 	}
-	//Marca o tempo final
-	gettimeofday(&e, NULL);
 
-	//Printa o array ordenado
-	// printf("\n\nArray ordenado:\n");
-	// printArray(arr, SIZE);
-
-	//Calcula o tempo total de execução a partir da primeira chamada do algoritmo mergeSort()
-	seconds = e.tv_sec - b.tv_sec;
-	microseconds = e.tv_usec - b.tv_usec;
-	elapsed = (seconds + microseconds*1e-6) * 1000; //Milliseconds
-
-	printf("\n\nTotal execution time of mergeSort() function: %f ms\n", elapsed);
-
+	sum_elapsed = sum_elapsed/repeat;
+	printf("\n\nTotal average execution time of 10 x mergeSort(): %f ms\n", sum_elapsed);
+	
 	return 0;
 }
