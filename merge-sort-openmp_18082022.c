@@ -87,7 +87,7 @@ void mergeSort(int arr[], int l, int r)
 		// O mesmo que (l+r)/2, mas evita overflow para l e r muito grandes
 		int m = l + (r - l) / 2;
 
-		// Ordena primeira e segunda metades (de forma paralela apenas se tamanho do vetor < threshold)
+		// Ordena primeira e segunda metades (de forma paralela apenas se tamanho do vetor > threshold)
 		if((r-l)>threshold)
 		{
 			//Inicializa tarefa (nova thread filha com metade do array)
